@@ -1,0 +1,22 @@
+name: MCSLT
+channels:
+  - defaults
+dependencies:
+  - seaborn
+  - pandas
+  - numpy
+  - pywavelets
+  - python=3.9
+  - jupyter
+  - scipy
+  - matplotlib
+  - pytorch
+  - cudatoolkit=11.6
+  - torchaudio
+  - torchvision
+  - gpytorch
+  - pyro-ppl
+  - graphviz
+  - python-igraph
+  - statsmodels
+  - networkx
