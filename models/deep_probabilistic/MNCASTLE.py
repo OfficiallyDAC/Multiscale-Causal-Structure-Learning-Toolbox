@@ -119,16 +119,10 @@ class CausalCoeff(gpytorch.models.ApproximateGP):
 
         if kernel is None:
             kernel = gpytorch.kernels.MaternKernel(nu=2.5,lengthscale_constraint=gpytorch.constraints.GreaterThan(1.),lengthscale_prior=None)
-            print("None")
+            #print("None")
         else:
             kernel = kernel
-            print("Kernel", kernel)
-        # if kernel_spec['kernel'] is None:
-        #     kernel = gpytorch.kernels.RBFKernel()
-        # else:
-        #     kernel = kernel_spec['kernel'](lengthscale_constraint=kernel_spec['lengthscale_constraint'],
-        #                                   lengthscale_prior=kernel_spec['lengthscale_prior'])
-        #     assert isinstance(kernel, gpytorch.kernels.Kernel), "Kernel must be a valid (combination of) gpytorch.kernels.Kernel"
+            #print("Kernel", kernel)
         
         assert 0<frac_inducing<=1, "frac_inducing must be in (0,1]"
         assert isinstance(name_prefix, str), "name_prefix must be a string"
