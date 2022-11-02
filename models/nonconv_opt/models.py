@@ -133,7 +133,7 @@ class SSCASTLE:
         return np.where(v>lmbd1, v-lmbd1, np.where(v<-lmbd1, v+lmbd1, 0.))
         
 
-    def solver(self, reg=None, thresh=None, lmbd=None, 
+    def solver(self, reg=None, thresh=None, interval=(-1.,1.), lmbd=None, 
                rho1=None, rho2=None, 
                alpha=None, beta=None,
                ratio=None, h_tol=None, rho1_tol=None, 
@@ -143,6 +143,7 @@ class SSCASTLE:
         =====
         reg: string, default None, else choose one between ['l1','tv'], where 'tv' stands for 'total variation'.
         thresh: float, threshold for causal coeff, default=.05
+        interval: tuple, (min, max) for causal coefficients, default=(-1.,1.) 
         lmbd: float, sparsity regularization strenght, default=.01
         rho1: float, penalty param of augmented lagrangian linked to acyclicity constraint, default=.01
         rho2: float, penalty param of augmented lagrangian linked to sparsity constraint, default=1.
@@ -172,6 +173,8 @@ class SSCASTLE:
         else:
             if not isinstance(thresh, float) or thresh<0.:
                 raise Exception("thresh must be a scalar >= than zero.") 
+
+        assert isinstance(interval, tuple) and len(interval)==2 and all(isinstance(n,(int, float)) for n in interval), 'rng_diag must be a tuple of two real numbers.'
         
         if lmbd==None: lmbd=.01
         else:
@@ -221,7 +224,9 @@ class SSCASTLE:
         if not isinstance(verbose, bool):
             raise Exception("verbose must be either True or False.")
         
-        start = time.time()        
+        start = time.time()  
+
+        interval=sorted(interval)      
         
         #Initialization
         #vector to optimize
@@ -247,7 +252,7 @@ class SSCASTLE:
             
             
         #boundaries for projection operator
-        bnds = [(0, 0) if (i<self.N and j<self.N and i==j) else (-1, 1) 
+        bnds = [(0, 0) if (i<self.N and j<self.N and i==j) else (interval[0], interval[1]) 
                 for i in range(self.N*(self.lag+1)) for j in range(self.N)]
         
         for it in range(max_iter):
@@ -703,7 +708,9 @@ class MSCASTLE:
         #Dagness constraint
         h = np.inf
         #Scaled Lagrange multiplier
-        beta /= rho2            
+        beta /= rho2
+
+        bounds=sorted(bounds)            
             
         #boundaries for causal coeff
         bnds = self._prior(bounds=bounds)
