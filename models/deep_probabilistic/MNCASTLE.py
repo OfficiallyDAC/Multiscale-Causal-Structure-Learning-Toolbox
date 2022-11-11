@@ -84,6 +84,7 @@ class CausalCoeff(gpytorch.models.ApproximateGP):
                  T,
                  N,
                  kernel=None,
+                 mean_prior=None,
                 #  kernel_spec=None,
                  frac_inducing=.64, 
                  name_prefix="CausalCoeff",
@@ -142,7 +143,7 @@ class CausalCoeff(gpytorch.models.ApproximateGP):
         super().__init__(variational_strategy)
 
         # Mean, covar, likelihood        
-        self.mean_module = gpytorch.means.ConstantMean(batch_shape=torch.Size([self.J,self.N,self.N]))
+        self.mean_module = gpytorch.means.ConstantMean(constant_prior=mean_prior, batch_shape=torch.Size([self.J,self.N,self.N]))
         self.covar_module = gpytorch.kernels.ScaleKernel(kernel,
                                                          batch_shape=torch.Size([self.J,self.N,self.N]))
         
