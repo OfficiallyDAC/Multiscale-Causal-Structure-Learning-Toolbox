@@ -86,6 +86,7 @@ class CausalCoeff(gpytorch.models.ApproximateGP):
                  kernel=None,
                  mean_prior=None,
                 #  kernel_spec=None,
+                 beta=1.,
                  frac_inducing=.64, 
                  name_prefix="CausalCoeff",
                  device='cpu'):
@@ -107,11 +108,13 @@ class CausalCoeff(gpytorch.models.ApproximateGP):
         assert isinstance(J, int) and J>0, "J is the numebr of scales"
         assert isinstance(T,int) and T>0, "T is the number of samples"
         assert isinstance(N, int) and N>1, "N is the number of variables"
+        assert isinstance(beta, float) and beta>0., "Beta scales KL"
         # assert set(['kernel', 'lengthscale_constraint', 'lengthscale_prior'])==set(kernel_spec.keys()), "Kernel dict must have as keys 'kernel', 'lengthscale_constraint', 'lengthscale_prior'"
         
         self.J = J
         self.T = T
         self.N = N
+        self.beta = beta
         self.device=device
         
         self.zero = torch.zeros(1, device=self.device)
@@ -154,7 +157,7 @@ class CausalCoeff(gpytorch.models.ApproximateGP):
 
     def guide(self, time_steps, ordering, S ):
         # Get q(f) - variational (guide) distribution of latent function
-        function_dist = self.pyro_guide(time_steps)
+        function_dist = self.pyro_guide(time_steps, beta=self.beta)
         J = S.shape[0]
         assert J==self.J, "The number of scales J must be equal to the left-most dimension of S"
         
@@ -186,7 +189,7 @@ class CausalCoeff(gpytorch.models.ApproximateGP):
         
         pyro.module(self.name_prefix + ".gp", self)
         
-        function_dist = self.pyro_model(time_steps)
+        function_dist = self.pyro_model(time_steps, beta=self.beta)
         
         J = S.shape[0]
         assert J==self.J, "The number of scales J must be equal to the left-most dimension of S"
