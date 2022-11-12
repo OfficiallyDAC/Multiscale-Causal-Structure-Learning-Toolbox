@@ -89,7 +89,8 @@ class CausalCoeff(gpytorch.models.ApproximateGP):
                 mean_prior=None,
                 beta=1.,
                 Chol_init_std=1.e-3,
-                frac_inducing=.64, 
+                frac_inducing=.64,
+                batched_Chol=True, 
                 name_prefix="CausalCoeff",
                 device='cpu'):
         """
@@ -136,21 +137,31 @@ class CausalCoeff(gpytorch.models.ApproximateGP):
         
         # Define all the variational stuff
         num_inducing = int(frac_inducing*self.T)
-        inducing_points = torch.linspace(0, 1, num_inducing).view(1,1,1,-1,1).repeat(self.J,self.N,self.N,1,1)
-        variational_strategy = gpytorch.variational.VariationalStrategy(
+        if batched_Chol:
+            inducing_points = torch.linspace(0, 1, num_inducing).view(1,1,1,-1,1).repeat(self.J,self.N,self.N,1,1)
+            variational_strategy = gpytorch.variational.VariationalStrategy(
             self, inducing_points,
             gpytorch.variational.CholeskyVariationalDistribution(num_inducing_points=num_inducing,
                                                                 batch_shape=torch.Size([self.J,self.N,self.N]),
-                                                                mean_init_std=Chol_init_std)
-        )
+                                                                mean_init_std=Chol_init_std))
+        else:                                                                
+            inducing_points = torch.linspace(0, 1, num_inducing).view(1,1,1,-1,1)
+            variational_strategy = gpytorch.variational.VariationalStrategy(
+                self, inducing_points,
+                gpytorch.variational.CholeskyVariationalDistribution(num_inducing_points=num_inducing,
+                                                                    mean_init_std=Chol_init_std))
 
         # Standard initializtation
         super().__init__(variational_strategy)
 
         # Mean, covar, likelihood        
         self.mean_module = gpytorch.means.ConstantMean(constant_prior=mean_prior, batch_shape=torch.Size([self.J,self.N,self.N]))
-        self.covar_module = gpytorch.kernels.ScaleKernel(kernel,
-                                                         batch_shape=torch.Size([self.J,self.N,self.N]))
+        if batched_Chol:
+            self.covar_module = gpytorch.kernels.ScaleKernel(kernel,
+                                                             batch_shape=torch.Size([self.J,self.N,self.N]))
+        else:
+            self.covar_module = gpytorch.kernels.ScaleKernel(kernel)
+        
         
     def forward(self, time_steps):
         mean = self.mean_module(time_steps)
