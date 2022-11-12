@@ -10,11 +10,13 @@ class CausalOrder():
     def __init__(self,
                  T,
                  N,
+                 scale_cc=1.,
                  name_prefix="CausalOrder",
                  device='cpu'):
         
         self.T=T
         self.N=N
+        self.scale_cc=scale_cc
         self.name_prefix=name_prefix
         self.device=device
         self.zero = torch.zeros(1, device=self.device)
@@ -74,22 +76,22 @@ class CausalOrder():
 
         with nodes_axis1,nodes_axis2:
             c0_loc = pyro.param(self.name_prefix+".c0_loc", self.zero.expand(N,N))
-            c0_scale = pyro.param(self.name_prefix+".c0_scale", self.one.expand(N,N), constraint=constraints.positive)
+            c0_scale = pyro.param(self.name_prefix+".c0_scale", self.scale_cc*self.one.expand(N,N), constraint=constraints.positive)
             c0 = pyro.sample(self.name_prefix+".c0", dist.Normal(c0_loc, c0_scale).mask(B))
 
 
 class CausalCoeff(gpytorch.models.ApproximateGP):
     def __init__(self,
-                 J,
-                 T,
-                 N,
-                 kernel=None,
-                 mean_prior=None,
-                #  kernel_spec=None,
-                 beta=1.,
-                 frac_inducing=.64, 
-                 name_prefix="CausalCoeff",
-                 device='cpu'):
+                J,
+                T,
+                N,
+                kernel=None,
+                mean_prior=None,
+                beta=1.,
+                Chol_init_std=1.e-3,
+                frac_inducing=.64, 
+                name_prefix="CausalCoeff",
+                device='cpu'):
         """
          INPUT
         =====
@@ -139,7 +141,7 @@ class CausalCoeff(gpytorch.models.ApproximateGP):
             self, inducing_points,
             gpytorch.variational.CholeskyVariationalDistribution(num_inducing_points=num_inducing,
                                                                 batch_shape=torch.Size([self.J,self.N,self.N]),
-                                                                mean_init_std=1.e-3)
+                                                                mean_init_std=Chol_init_std)
         )
 
         # Standard initializtation
