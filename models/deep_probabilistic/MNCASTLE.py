@@ -10,6 +10,7 @@ class CausalOrder():
     def __init__(self,
                  T,
                  N,
+                 dtype,
                  scale_cc=1.,
                  name_prefix="CausalOrder",
                  device='cpu'):
@@ -19,10 +20,10 @@ class CausalOrder():
         self.scale_cc=scale_cc
         self.name_prefix=name_prefix
         self.device=device
-        self.zero = torch.zeros(1, dtype=torch.float32, device=self.device)
-        self.one = torch.ones(1, dtype=torch.float32,device=self.device)
+        self.zero = torch.zeros(1, dtype=dtype, device=self.device)
+        self.one = torch.ones(1, dtype=dtype,device=self.device)
         self.pl_init = .5*self.one.expand(self.N)
-        self.D = torch.eye(self.N,self.N,device=self.device)
+        self.D = torch.eye(self.N,self.N,dtype=dtype,device=self.device)
             
     def model(self, X):
         #dataset size
