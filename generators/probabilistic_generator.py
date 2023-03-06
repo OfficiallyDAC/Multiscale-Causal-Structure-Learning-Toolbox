@@ -10,7 +10,7 @@ from distributions.Plackett_Luce import PlackettLuce, make_permutation_matrix
 
 class Generator():
     
-    def __init__(self, T, N, multiscale, nonstationarity, density, kernel=None, fixed_MNDAG=False):
+    def __init__(self, T, N, multiscale, nonstationarity, density, kernel=None, distribution='G', fixed_MNDAG=False):
         """
         INPUT
         =====
@@ -24,6 +24,7 @@ class Generator():
                 If a np.ndarray/torch.Tensor is provided, then it must be 1-dim with entries in [0,1].
                 If the len of density is greater/lower than the number of contributing scales, it is cut/zero-padded from the right (a message will be printed). 
         kernel: object, a valid (combination of) Pyro kernel(s)
+        distribution: str, 'G' for Gaussian, 'L' for Laplace, 'U' for uniform
         fixed_MNDAG: bool, if True the underlying structure is kept fixed to generate multiple times from it; otherwise the structure will change every time the method generate() is run.
         """
         
@@ -37,6 +38,7 @@ class Generator():
         self.N=N
         self.multiscale=multiscale
         self.nonstationarity=nonstationarity
+        self.distribution=distribution
         self.fixed_MNDAG=fixed_MNDAG
         
         self.zero = torch.zeros(1)
@@ -88,8 +90,13 @@ class Generator():
         #latent variable is 
         #distributed according 
         #a multivariate normal N(0,I)
-        self.Z = dist.Normal(self.zero, self.one).expand([self.J,self.T+self.to_add,self.N]).sample()
-        
+        if self.distribution=='G':
+            self.Z = dist.Normal(self.zero, self.one).expand([self.J,self.T+self.to_add,self.N]).sample()
+        elif self.distribution=='L':
+            self.Z = dist.Laplace(self.zero, self.one).expand([self.J,self.T+self.to_add,self.N]).sample()
+        elif self.distribution=='U':
+            self.Z = dist.Normal(self.zero, self.one).expand([self.J,self.T+self.to_add,self.N]).sample()
+
     def sample_GP(self):
         xs = 2*math.pi*torch.linspace(0,1,self.T+self.to_add.item())
         self.cov=self.kernel.forward(xs)+.001*self.one.expand([self.T+self.to_add.item()]).diag()

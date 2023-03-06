@@ -352,7 +352,7 @@ class MSCASTLE:
         
         #Apply SWT. The details of the n-th level have indexes from n*self.ndetais to (n+1)*self.ndetais
         #decompose Y
-        self.Y_dec= np.concatenate(np.array(pywt.swt(self.Y, 'db1', level=self.ndetails,
+        self.Y_dec= np.concatenate(np.array(pywt.swt(self.Y, self.wavelet, level=self.ndetails,
                                                      axis=0, trim_approx=True, norm=True))[1:], axis=-1)
         
         if self.ndetails is None:
