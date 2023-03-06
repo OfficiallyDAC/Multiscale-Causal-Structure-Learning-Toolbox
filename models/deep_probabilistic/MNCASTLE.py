@@ -131,7 +131,8 @@ class CausalCoeff(gpytorch.models.ApproximateGP):
         self.D = torch.eye(self.N,self.N,device=self.device)
 
         if kernel is None:
-            kernel=gpytorch.kernels.MaternKernel(nu=2.5,lengthscale_constraint=gpytorch.constraints.GreaterThan(1.),lengthscale_prior=None)
+            #kernel=gpytorch.kernels.MaternKernel(nu=2.5,lengthscale_constraint=gpytorch.constraints.GreaterThan(1.),lengthscale_prior=None)
+            kernel=gpytorch.kernels.MaternKernel(nu=1.5,lengthscale_constraint=None,lengthscale_prior=None)
             #print("None")
         else:
             kernel = kernel
