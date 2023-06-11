@@ -312,10 +312,120 @@ class SSCASTLE:
             return Bs, (it, t), loss, ell1
         else:
             return Bs, (it, t)
+        
+class MSCASTLE():
+
+    def __init__(self, Y, lag=None, maxlags=None, criterion=None, multiscale=False, transform='dwt', wavelet='db1', ndetails=None):
+        """
+        INPUT
+        =====
+        Y: np.array, TxN with T observations and N # of ts
+        reg: string, default None, else choose one between ['l1','tv'], where 'tv' stands for 'total variation'.
+        lag: AR lags, if None then estimate the max number of lags via VAR model
+        maxlags: int, necessary only if lag=None. Maximum number of lags to check in order to 
+                estimate lag
+        criterion: str, one among ['aic', 'bic', 'fpe', 'hqic']
+        multiscale: bool, True to apply multiresolution analysis, False otherwise
+        wavelet: str, wavelet to use, see pywt discrete wavelet families (only if multiscale=True)
+        ndetails: int, number of details of Stationary Wavelet Transform (SWT) (only if multiscale=True)
+        """
+        
+        #check variables
+        if isinstance(Y, np.ndarray):
+            self.Y = Y
+            self.N = Y.shape[1]
+        else: raise Exception('Y must be a jnp.array.')
+
+        assert isinstance(multiscale, bool), 'multiscale must be boolean.'
+        
+        if multiscale: 
+
+            if ndetails is None:
+                #max number of levels
+                self.ndetails = None       
+            elif isinstance(ndetails, int) and ndetails>0:
+                self.ndetails = ndetails
+            else: raise Exception('ndetails must be a positive integer.')
+            
+            if wavelet in pywt.wavelist(kind='discrete'):
+                self.wavelet = wavelet
+            else:
+                raise Exception('wavelet must be one of the available pywt discrete wavelets')
+            
+            assert transform in ('dwt', 'swt'), "transform must be either 'dwt' or 'swt'"
+            
+            self.transform = transform
+            self.Y = np.asarray(pywt.mra(self.Y, self.wavelet, self.ndetails, axis=0, transform=self.transform, mode='periodization'))
+            
+        else:
+            self.Y = np.expand_dims(self.Y, 0)
+
+        self.J=self.Y.shape[0]
+
+        if lag is None:
+            
+            self.lag=np.zeros(self.J, dtype=int)
+
+            if maxlags is None: self.maxlags = 10
+            elif isinstance(maxlags, int) and maxlags>0:
+                self.maxlags = maxlags
+            else:
+              raise Exception('maxlags must be a strictly positive integer.')
+              
+            if criterion is None: self.criterion = 'bic'
+            elif isinstance(criterion, str) and criterion.lower() in ['aic', 'bic', 'fpe', 'hqic']:
+                self.criterion = criterion
+            else:
+                raise Exception("criterion must be one among ['aic', 'bic', 'fpe', 'hqic']")
+
+            for j in range(self.J):
+                self.lag[j]=self._fit_VAR(self.Y[j])
+
+        elif isinstance(lag, int) and lag>=0:
+            self.lag=lag*np.ones(self.J, dtype=int)
+                       
+        elif isinstance(lag, np.ndarray) and lag.dtype==int and  lag.shape[0]==self.J and (lag>=0).all() and lag.ndim==1:
+            self.lag = lag
+        else: raise Exception('lag must be an 1d array of positive integers of length equal to the number of timescales.')
+
+    def _fit_VAR(self, Y_j):
+        best_value = np.inf
+        nlags = 0
+
+        for l in range(1, self.maxlags + 1):
+            model = VAR(np.asarray(Y_j))
+            fitted = model.fit(maxlags=l , ic=self.criterion, trend='n')
+
+            value = getattr(fitted, self.criterion)
+            if value < best_value:
+                best_value = value
+                nlags = fitted.k_ar
+
+        return nlags
+    
+    def _solver(self, verbose=False, **kwargs):
+        
+        L = np.max(self.lag)
+        Bs = np.zeros((self.J, L+1, self.N, self.N))
+        
+        kwargs['verbose']=verbose
+            
+        for j in range(self.J):
+            if verbose:
+                print("\n\n######### Scale {} #########\n".format(self.J-j))
+            sscastle = SSCASTLE(self.Y[j], self.lag[j].item())
+            
+            if verbose:
+                Bs_j, _, _, _ = sscastle.solver(**kwargs)
+            else:
+                Bs_j, _ = sscastle.solver(**kwargs)
+            Bs[j, :self.lag[j].item()+1]+=Bs_j
+
+        return Bs
 
 #Multiscale Causal Structure Learning
 #paper
-class MSCASTLE:
+class MSCASTLE_OLD:
     
     def __init__(self, Y, lag=None, maxlags=None, criterion=None, wavelet='db1', ndetails=None):
         """

@@ -95,7 +95,7 @@ class Generator():
         elif self.distribution=='L':
             self.Z = dist.Laplace(self.zero, self.one).expand([self.J,self.T+self.to_add,self.N]).sample()
         elif self.distribution=='U':
-            self.Z = dist.Normal(self.zero, self.one).expand([self.J,self.T+self.to_add,self.N]).sample()
+            self.Z = dist.Uniform(self.zero, self.one).expand([self.J,self.T+self.to_add,self.N]).sample()
 
     def sample_GP(self):
         xs = 2*math.pi*torch.linspace(0,1,self.T+self.to_add.item())
