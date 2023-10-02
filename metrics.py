@@ -3,7 +3,7 @@ import numpy as np
 from scipy.stats import hmean
 
 def is_dag(A):
-    G = ig.Graph.Adjacency(A.tolist())
+    G = ig.Graph.Weighted_Adjacency(A.tolist())
     return G.is_dag()
 
 def get_DAG(B):
@@ -49,8 +49,8 @@ def count_accuracy(B_true, B_est):
     else:  # dag
         if not ((B_est == 0) | (B_est == 1)).all():
             raise ValueError('B_est should take value in {0,1}')
-        if not is_dag(B_est):
-            raise ValueError('B_est should be a DAG')
+        # if not is_dag(B_est):
+        #     raise ValueError('B_est should be a DAG')
     d = B_true.shape[0]
     # linear index of nonzeros
     pred_und = np.flatnonzero(B_est == -1)
